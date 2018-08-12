@@ -127,10 +127,25 @@ class TextMateLanguageMode {
 
     if (!decreaseIndentRegex.testSync(line)) return
 
-    const precedingRow = this.buffer.previousNonBlankRow(bufferRow)
-    if (precedingRow == null) return
+    let precedingRow = bufferRow;
+    let precedingLine;
+    console.time("indent")
+    while (true) {
+      precedingRow = this.buffer.previousNonBlankRow(precedingRow);
+      if (precedingRow == null) return
+      precedingLine = this.buffer.lineForRow(precedingRow)
 
-    const precedingLine = this.buffer.lineForRow(precedingRow)
+      /*  ~5-15 ms */
+      const match = precedingLine.match(/\S/)
+      const scopes = this.scopeDescriptorForPosition([precedingRow, match.index]).scopes
+      if (!scopes.some(s => s.startsWith("comment.line"))) break
+
+      /* ~2 ms */
+      // if (!/\s*(\*|\/)\//.test(precedingLine)) { break; }
+
+
+    }
+    console.timeEnd("indent")
     let desiredIndentLevel = this.indentLevelForLine(precedingLine, tabLength)
 
     const increaseIndentRegex = this.increaseIndentRegexForScopeDescriptor(scopeDescriptor)
