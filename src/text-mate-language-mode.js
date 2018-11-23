@@ -597,6 +597,327 @@ class TextMateLanguageMode {
     return new Range(new Point(position.row, startColumn), new Point(position.row, endColumn))
   }
 
+
+  partsMatchTag (parts, tag, knownTokens) {
+    const scope = this.grammar.scopeForId(tag)
+    const scopeParts = scope.split('.')
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] !== '*' && parts[i] !== scopeParts[i]) {
+        knownTokens.set(tag, false)
+        return false
+      }
+    }
+    return true
+  }
+
+  rangesMatchingScopeInBufferRange (scope, range) {
+    const parts = scope.split('.')
+
+    const knownTokens = new Map()
+    range = this.buffer.clipRange(Range.fromObject(range))
+    const ranges = []
+
+    const it = {
+      startRow: range.start.row,
+      startColumn: range.start.column,
+
+      endRow: range.end.row,
+      endColumn: range.end.column,
+
+      row: range.start.row,
+      column: 0,
+
+      tagIndex: 0,
+
+      rangeStartRow: 0,
+      rangeStartColumn: 0,
+
+      aligned: false,
+
+      targetDepth: 0,
+      scopes: []
+    }
+
+    let tokenizedLine = this.tokenizedLineForRow(it.row)
+
+    it.scopes = tokenizedLine.openScopes.slice()
+
+    let tags = tokenizedLine.tags
+    let tag
+
+    let aligned = false
+
+    for (; it.tagIndex < tags.length; it.tagIndex++) {
+      tag = tags[it.tagIndex]
+      if (tag < 0) {
+        if ((tag % 2) === 0) {
+          it.scopes.pop()
+        } else {
+          it.scopes.push(tag)
+        }
+      } else {
+        // TODO: handle if it's on the start of the line correctly
+        it.column += tag
+        if (it.column > it.startColumn) {
+          break
+        } else if (it.column === it.startColumn) {
+
+
+          // TODO: Work out if we're handling this correctly
+          if (it.startColumn === this.buffer.lineLengthForRow(it.row)) break
+
+          // pop off the ended scopes, but don't add the new ones
+          aligned = true
+          it.aligned = true
+          it.tagIndex++
+          for (; it.tagIndex < tags.length; it.tagIndex++) {
+            tag = tags[it.tagIndex]
+            if (tag >= 0 || (tag % 2) === -1) break
+            it.scopes.pop()
+          }
+          break
+        }
+      }
+    }
+
+    let startMatchNum = 0
+
+    // Work out if we started in the middle of a valid range
+    for (let i = 0; i < it.scopes.length; i++) {
+      tag = it.scopes[i]
+      const match = this.partsMatchTag(parts, tag, knownTokens)
+      if (match) {
+        startMatchNum = tag
+        it.targetDepth = i
+        break
+      };
+    }
+
+
+    // Get the location of the opening of the broadest scope that matched
+    // Theoretically can do this by counting depth
+    if (startMatchNum !== 0) {
+
+      this.goBackToTargetDepth(it, tags)
+
+
+      console.log("Starts at row", it.rangeStartRow, "col", it.rangeStartColumn)
+
+
+      // Now look for the end, starting from the left off column and tagIndex, etc.
+      // We know that the end must be somewhere from there+
+
+      tags = this.tokenizedLineForRow(it.row).tags
+
+
+      // This fixes up the behaviour we had if it was aligned
+      if (aligned) {
+        for (; it.tagIndex < tags.length; it.tagIndex++) {
+          tag = tags[it.tagIndex]
+          if (tag >= 0) { it.column += tag; break }
+          it.scopes.push(tag)
+        }
+      }
+      // from this point, it doesn't matter if it was aligned or not
+
+      // we already accounted for the current tagIndex, so move to next
+      it.tagIndex += 1
+
+
+      this.goToEndOfScope(it, tags)
+
+
+
+      console.log("Ends at row", it.row, "col", it.column);
+
+      ranges.push(new Range([it.rangeStartRow, it.rangeStartColumn], [it.row, it.column]))
+
+    }
+
+    it.scopes = it.scopes.slice(0, it.targetDepth)
+
+    console.log("Current scopes at end of first:", it.scopes.map(s => this.grammar.scopeForId(s)));
+
+    // Process the contents of the selection
+    while (it.row < it.endRow) {
+      for (; it.tagIndex < tags.length; it.tagIndex++) {
+        tag = tags[it.tagIndex]
+        if (tag >= 0) { it.column += tag; continue }
+        if ((tag % 2) === 0) {
+          it.scopes.pop()
+        } else {
+          if (this.partsMatchTag(parts, tag, knownTokens)) {
+            it.rangeStartRow = it.row
+            it.rangeStartColumn = it.column
+
+            console.log("Detected start: row", it.row, "col", it.column);
+
+            it.targetDepth = it.scopes.length
+            this.goToEndOfScope(it, tags)
+
+            console.log("End of scope: row", it.row, "col", it.column)
+
+            ranges.push(new Range([it.rangeStartRow, it.rangeStartColumn], [it.row, it.column]))
+
+          }
+          it.scopes.push(tag)
+        }
+      }
+
+      it.row += 1
+      it.column = 0
+
+      tags = this.tokenizedLineForRow(it.row).tags
+      it.tagIndex = 0
+    }
+
+    // Process the final line of the selection
+    if (it.row === it.endRow) {
+      for (; it.tagIndex < tags.length; it.tagIndex++) {
+        tag = tags[it.tagIndex]
+        if (tag >= 0) {
+          it.column += tag;
+          if (it.column >= it.endColumn) break
+          continue
+        }
+        if ((tag % 2) === 0) {
+          it.scopes.pop()
+        } else {
+          if (this.partsMatchTag(parts, tag, knownTokens)) {
+            it.rangeStartRow = it.row
+            it.rangeStartColumn = it.column
+
+            console.log("Detected start: row", it.row, "col", it.column);
+
+            it.targetDepth = it.scopes.length
+            this.goToEndOfScope(it, tags)
+
+            console.log("End of scope: row", it.row, "col", it.column)
+
+            ranges.push(new Range([it.rangeStartRow, it.rangeStartColumn], [it.row, it.column]))
+
+          }
+          it.scopes.push(tag)
+        }
+      }
+    }
+
+
+    console.log(ranges);
+    return ranges
+  }
+
+  // Sets the { row, column } of it to the end of the scope (the target depth is defined by it)
+  goToEndOfScope (it, tags) {
+    let currentDepth = it.scopes.length
+    let tag
+
+    // search the rest of this line for the end
+    for (; it.tagIndex < tags.length; it.tagIndex++) {
+      tag = tags[it.tagIndex]
+      if (tag >= 0) { it.column += tag; continue }
+
+      if ((tag % 2) === 0) {
+        currentDepth -= 1
+        if (currentDepth === it.targetDepth) {
+          return
+        }
+      } else {
+        currentDepth += 1
+      }
+    }
+
+    // search deeper rows
+    let numRows = this.buffer.getLineCount()
+    it.row += 1
+    for (; it.row < numRows; it.row++) {
+      tags = this.tokenizedLineForRow(it.row).tags
+      it.tagIndex = 0
+      it.column = 0
+
+      for (; it.tagIndex < tags.length; it.tagIndex++) {
+        tag = tags[it.tagIndex]
+        if (tag >= 0) { it.column += tag; continue }
+
+        if ((tag % 2) === 0) {
+          currentDepth -= 1
+          if (currentDepth === it.targetDepth) {
+            return
+          }
+        } else {
+          currentDepth += 1
+        }
+      }
+    }
+
+    console.log("Did not find end of scope :(");
+  }
+
+  goBackToTargetDepth (it, tags) {
+    // Copy over some values we will need later
+    let tIndex = it.tagIndex
+    let tag
+
+    it.rangeStartRow = it.row
+    it.rangeStartColumn = it.column
+
+    let currentDepth = it.scopes.length
+
+    if (it.aligned) {
+      tIndex--;
+      for (; tIndex >= 0; tIndex--) {
+        if (tags[tIndex] < 0) {
+          currentDepth += 1
+        } else {
+          break
+        }
+      }
+    }
+
+    for (; tIndex >= 0; tIndex--) {
+      tag = tags[tIndex]
+      if (tag >= 0) { it.rangeStartColumn -= tag; continue }
+
+      if ((tag % 2) === 0) {
+        currentDepth += 1
+      } else {
+        currentDepth -= 1
+
+        if (currentDepth === it.targetDepth) {
+          return
+        }
+      }
+    }
+
+    // console.log("Must be on a higher line...");
+
+    // Handle if it's on a higher line
+    for (it.rangeStartRow = it.row - 1; it.rangeStartRow >= 0; it.rangeStartRow--) {
+      tags = this.tokenizedLineForRow(it.rangeStartRow).tags
+
+      for (tIndex = tags.length - 1; tIndex >= 0; tIndex--) {
+        tag = tags[tIndex]
+        if (tag >= 0) continue
+
+        if ((tag % 2) === 0) {
+          currentDepth += 1
+        } else {
+          currentDepth -= 1
+
+          if (currentDepth === it.targetDepth) {
+            it.rangeStartColumn = 0
+            for (let i = 0; i < tIndex; i++) {
+              if (tags[i] > 0) it.rangeStartColumn += tags[i]
+            }
+            return
+          }
+        }
+      }
+    }
+
+    console.error("Did not find start!!!")
+  }
+
   isRowCommented (row) {
     return this.tokenizedLines[row] && this.tokenizedLines[row].isComment()
   }
