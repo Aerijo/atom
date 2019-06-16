@@ -226,9 +226,13 @@ class TreeSitterLanguageMode {
 
   isFoldableAtRow(row) {
     if (this.isFoldableCache[row] != null) return this.isFoldableCache[row];
-    const result =
-      this.getFoldableRangeContainingPoint(Point(row, Infinity), 0, true) !=
-      null;
+    let result = this.getFoldableRangeContainingPoint(Point(row, Infinity), 0, true) != null;
+
+    if (!result && this.isRowCommented(row)) {
+      let linecount = this.buffer.getLineCount();
+      result = (row === 0 || !this.isRowCommented(row - 1)) && linecount > row && this.isRowCommented(row + 1);
+    }
+
     this.isFoldableCache[row] = result;
     return result;
   }
@@ -247,7 +251,13 @@ class TreeSitterLanguageMode {
     while (stack.length > 0) {
       const { node, level } = stack.pop();
 
-      const range = this.getFoldableRangeForNode(node, this.grammar);
+      let range = this.getFoldableRangeForNode(node, this.grammar);
+      if (!range && this.isRowCommented(node.startPosition.row)) {
+        const endRow = this.endRowForCommentFoldAtRow(node.startPosition.row);
+        if (endRow) {
+          range = new Range(new Point(node.startPosition.row, Infinity), new Point(endRow, Infinity));
+        }
+      }
       if (range) {
         if (goalLevel == null || level === goalLevel) {
           let updatedExistingRange = false;
@@ -267,6 +277,7 @@ class TreeSitterLanguageMode {
 
       const parentStartRow = node.startPosition.row;
       const parentEndRow = node.endPosition.row;
+      let inLineComment = false;
       for (
         let children = node.namedChildren, i = 0, { length } = children;
         i < length;
@@ -274,7 +285,19 @@ class TreeSitterLanguageMode {
       ) {
         const child = children[i];
         const { startPosition: childStart, endPosition: childEnd } = child;
-        if (childEnd.row > childStart.row) {
+        let searchChild = childEnd.row > childStart.row;
+
+        if (!searchChild) {
+          const rowCommented = this.isRowCommented(childStart.row);
+          if (rowCommented && !inLineComment) {
+            searchChild = true;
+            inLineComment = true;
+          } else {
+            inLineComment = false;
+          }
+        }
+
+        if (searchChild) {
           if (
             childStart.row === parentStartRow &&
             childEnd.row === parentEndRow
@@ -319,9 +342,34 @@ class TreeSitterLanguageMode {
       }
     });
 
+    if (!existenceOnly && (!smallestRange || smallestRange.start.row < point.row)) {
+      if (this.isRowCommented(point.row)) {
+        const endRow = this.endRowForCommentFoldAtRow(point.row);
+        if (endRow) {
+          smallestRange = new Range(point, new Point(endRow, Infinity));
+        }
+      }
+    }
+
     return existenceOnly
       ? smallestRange && smallestRange.start.row === point.row
       : smallestRange;
+  }
+
+  endRowForCommentFoldAtRow(row) {
+    if (row !== 0 && this.isRowCommented(row - 1)) return;
+
+    let endRow;
+    for (
+      let nextRow = row + 1, end = this.buffer.getLineCount();
+      nextRow < end;
+      nextRow++
+    ) {
+      if (!this.isRowCommented(nextRow)) break;
+      endRow = nextRow;
+    }
+
+    return endRow;
   }
 
   _forEachTreeWithRange(range, callback) {
