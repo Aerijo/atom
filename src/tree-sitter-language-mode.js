@@ -1,4 +1,4 @@
-const Parser = require('tree-sitter');
+ const Parser = require('tree-sitter');
 const { Point, Range, spliceArray } = require('text-buffer');
 const { Patch } = require('superstring');
 const { Emitter } = require('event-kit');
@@ -225,12 +225,18 @@ class TreeSitterLanguageMode {
   */
 
   isFoldableAtRow(row) {
-    if (this.isFoldableCache[row] != null) return this.isFoldableCache[row];
-    let result = this.getFoldableRangeContainingPoint(Point(row, Infinity), 0, true) != null;
+    console.log(`checking foldable for row ${row}`)
+    let result;
 
-    if (!result && this.isRowCommented(row)) {
+    if (this.isFoldableCache[row] === undefined && this.isRowCommented(row)) {
       let linecount = this.buffer.getLineCount();
       result = (row === 0 || !this.isRowCommented(row - 1)) && linecount > row && this.isRowCommented(row + 1);
+    }
+
+    if (this.isFoldableCache[row] != null) return this.isFoldableCache[row];
+
+    if (!result) {
+      result = this.getFoldableRangeContainingPoint(Point(row, Infinity), 0, true) != null;
     }
 
     this.isFoldableCache[row] = result;
@@ -366,6 +372,7 @@ class TreeSitterLanguageMode {
       nextRow++
     ) {
       if (!this.isRowCommented(nextRow)) break;
+      this.isFoldableCache[nextRow] = false;
       endRow = nextRow;
     }
 
