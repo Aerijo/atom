@@ -210,6 +210,8 @@ module.exports = function(packagedAppPath) {
         requiredModuleRelativePath ===
           path.join('..', 'node_modules', 'tmp', 'lib', 'tmp.js') ||
         requiredModuleRelativePath ===
+          path.join('..', 'node_modules', 'parse5', 'lib', 'index.js') ||
+        requiredModuleRelativePath ===
           path.join('..', 'node_modules', 'tree-sitter', 'index.js') ||
         requiredModuleRelativePath ===
           path.join('..', 'node_modules', 'yauzl', 'index.js') ||
