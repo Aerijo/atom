@@ -3,20 +3,30 @@
 const fs = require('fs');
 const path = require('path');
 
-module.exports = function() {
-  process.env['PATH'] = process.env['PATH']
-    .split(';')
-    .filter(function(p) {
-      if (fs.existsSync(path.join(p, 'msbuild.exe'))) {
-        console.log(
-          'Excluding "' +
-            p +
-            '" from PATH to avoid msbuild.exe mismatch that causes errors during module installation'
-        );
-        return false;
-      } else {
-        return true;
-      }
-    })
-    .join(';');
-};
+const Task = require("./task")
+
+class DeleteMsbuild extends Task {
+  constructor() {
+    super("Delete MS Build from path");
+  }
+
+  run() {
+    process.env['PATH'] = process.env['PATH']
+      .split(';')
+      .filter(function(p) {
+        if (fs.existsSync(path.join(p, 'msbuild.exe'))) {
+          this.info(
+            'Excluding "' +
+              p +
+              '" from PATH to avoid msbuild.exe mismatch that causes errors during module installation'
+          );
+          return false;
+        } else {
+          return true;
+        }
+      })
+      .join(';');
+  }
+}
+
+module.exports = new DeleteMsbuild();
