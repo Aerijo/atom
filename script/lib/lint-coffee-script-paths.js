@@ -16,6 +16,8 @@ module.exports = function() {
   return expandGlobPaths(globPathsToLint)
     .then(readFiles)
     .then(files => {
+      console.log(`Linting ${files.length} CoffeeScript files...`)
+
       const errors = [];
       const lintConfiguration = require(path.join(
         CONFIG.repositoryRootPath,
