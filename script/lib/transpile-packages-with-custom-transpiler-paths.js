@@ -9,7 +9,7 @@ const CONFIG = require('../config');
 const backupNodeModules = require('./backup-node-modules');
 const runApmInstall = require('./run-apm-install');
 
-require('colors');
+const colors = require('colors/safe');
 
 module.exports = function() {
   console.log(
@@ -33,7 +33,7 @@ module.exports = function() {
     const metadata = require(metadataPath);
 
     if (metadata.atomTranspilers) {
-      console.log(' transpiling for package '.cyan + packageName.cyan);
+      console.log(colors.cyan(' transpiling for package ' + packageName));
       const rootPackageBackup = backupNodeModules(rootPackagePath);
       const intermediatePackageBackup = backupNodeModules(
         intermediatePackagePath

@@ -2,7 +2,7 @@
 
 'use strict'
 
-require('colors')
+const colors = require('colors/safe')
 
 const lintCoffeeScriptPaths = require('./lib/lint-coffee-script-paths')
 const lintJavaScriptPaths = require('./lib/lint-java-script-paths')
@@ -23,13 +23,13 @@ Promise.all([lintCoffeeScriptPaths(), lintJavaScriptPaths(), lintLessPaths()])
       for (let error of errors) {
         hasLintErrors = true
         const relativePath = path.relative(CONFIG.repositoryRootPath, error.path)
-        console.log(`${relativePath}:${error.lineNumber}`.yellow + ` ${error.message} (${error.rule})`.red)
+        console.log(colors.yellow(`${relativePath}:${error.lineNumber}`) + colors.red(` ${error.message} (${error.rule})`))
       }
     }
     if (hasLintErrors) {
       process.exit(1)
     } else {
-      console.log('No lint errors!'.green)
+      console.log(colors.green('No lint errors!'))
       process.exit(0)
     }
   })

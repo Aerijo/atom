@@ -1,4 +1,4 @@
-require('colors');
+const colors = require('colors/safe');
 
 const fs = require('fs');
 const path = require('path');
@@ -31,9 +31,9 @@ const versionMatch = appMetadata.version.match(/-(beta|nightly)\d+$/);
 const releaseChannel = versionMatch ? versionMatch[1] : 'stable';
 
 console.log(
-  `Serving ${
+  colors.green(`Serving ${
     appMetadata.productName
-  } release assets (channel = ${releaseChannel})\n`.green
+  } release assets (channel = ${releaseChannel})\n`)
 );
 
 function getMacZip(req, res) {
@@ -119,9 +119,9 @@ if (process.platform === 'darwin') {
   app.get('/api/updates-x64/:nupkg', getNupkgFile(true));
 } else {
   console.log(
-    `The current platform '${
+    colors.red(`The current platform '${
       process.platform
-    }' doesn't support Squirrel updates, exiting.`.red
+    }' doesn't support Squirrel updates, exiting.`)
   );
   process.exit(1);
 }

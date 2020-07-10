@@ -2,7 +2,7 @@
 
 'use strict'
 
-require('colors')
+const colors = require('colors/safe')
 const argv = require('yargs')
   .option('core-main', {
     describe: 'Run core main process tests',
@@ -91,7 +91,7 @@ function runCoreMainProcessTests (callback) {
 
   const testEnv = Object.assign({}, prepareEnv('core-main-process'), {ATOM_GITHUB_INLINE_GIT_EXEC: 'true'})
 
-  console.log('Executing core main process tests'.bold.green)
+  console.log(colors.green.bold('Executing core main process tests'))
   const cp = childProcess.spawn(executablePath, testArguments, {stdio: 'inherit', env: testEnv})
   cp.on('error', error => { callback(error) })
   cp.on('close', exitCode => { callback(null, {exitCode, step: 'core-main-process'}) })
@@ -105,7 +105,7 @@ function runCoreRenderProcessTests (callback) {
   ]
   const testEnv = prepareEnv('core-render-process')
 
-  console.log('Executing core render process tests'.bold.green)
+  console.log(colors.green.bold('Executing core render process tests'))
   const cp = childProcess.spawn(executablePath, testArguments, {stdio: 'inherit', env: testEnv})
   cp.on('error', error => { callback(error) })
   cp.on('close', exitCode => { callback(null, {exitCode, step: 'core-render-process'}) })
@@ -123,7 +123,7 @@ for (let packageName in CONFIG.appMetadata.packageDependencies) {
   const testSubdir = ['spec', 'test'].find(subdir => fs.existsSync(path.join(repositoryPackagePath, subdir)))
 
   if (!testSubdir) {
-    console.log(`No test folder found for package: ${packageName}`.yellow)
+    console.log(colors.yellow(`No test folder found for package: ${packageName}`))
     continue
   }
 
@@ -140,7 +140,7 @@ for (let packageName in CONFIG.appMetadata.packageDependencies) {
     const nodeModulesPath = path.join(repositoryPackagePath, 'node_modules')
     let finalize = () => null
     if (require(pkgJsonPath).atomTestRunner) {
-      console.log(`Installing test runner dependencies for ${packageName}`.bold.green)
+      console.log(colors.green.bold(`Installing test runner dependencies for ${packageName}`))
       if (fs.existsSync(nodeModulesPath)) {
         const backup = backupNodeModules(repositoryPackagePath)
         finalize = backup.restore
@@ -148,9 +148,9 @@ for (let packageName in CONFIG.appMetadata.packageDependencies) {
         finalize = () => fs.removeSync(nodeModulesPath)
       }
       runApmInstall(repositoryPackagePath)
-      console.log(`Executing ${packageName} tests`.green)
+      console.log(colors.green(`Executing ${packageName} tests`))
     } else {
-      console.log(`Executing ${packageName} tests`.bold.green)
+      console.log(colors.green.bold(`Executing ${packageName} tests`))
     }
     const cp = childProcess.spawn(executablePath, testArguments, {env: testEnv})
 
@@ -164,7 +164,7 @@ for (let packageName in CONFIG.appMetadata.packageDependencies) {
     })
     cp.on('close', exitCode => {
       if (exitCode !== 0) {
-        console.log(`Package tests failed for ${packageName}:`.red)
+        console.log(colors.red(`Package tests failed for ${packageName}:`))
         console.log(stderrOutput)
       }
       finalize()
@@ -178,7 +178,7 @@ function runBenchmarkTests (callback) {
   const testArguments = ['--benchmark-test', benchmarksPath]
   const testEnv = prepareEnv('benchmark')
 
-  console.log('Executing benchmark tests'.bold.green)
+  console.log(colors.green.bold('Executing benchmark tests'))
   const cp = childProcess.spawn(executablePath, testArguments, {stdio: 'inherit', env: testEnv})
   cp.on('error', error => { callback(error) })
   cp.on('close', exitCode => { callback(null, {exitCode, step: 'core-benchmarks'}) })

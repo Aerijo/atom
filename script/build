@@ -12,7 +12,7 @@ if (process.argv.includes('--no-bootstrap')) {
 
 // Needed so we can require src/module-cache.coffee during generateModuleCache
 require('coffee-script/register')
-require('colors')
+const colors = require('colors/safe')
 
 const path = require('path')
 const yargs = require('yargs')
@@ -99,13 +99,13 @@ if (!argv.generateApiDocs) {
           } else if (argv.testSign) {
             testSignOnMac(packagedAppPath)
           } else {
-            console.log('Skipping code-signing. Specify the --code-sign option to perform code-signing'.gray)
+            console.log(colors.gray('Skipping code-signing. Specify the --code-sign option to perform code-signing'))
           }
           break
         }
         case 'win32': {
           if (argv.testSign) {
-            console.log('Test signing is not supported on Windows, skipping.'.gray)
+            console.log(colors.gray('Test signing is not supported on Windows, skipping.'))
           }
 
           if (argv.codeSign) {
@@ -115,7 +115,7 @@ if (!argv.generateApiDocs) {
             }
             codeSignOnWindows(executablesToSign)
           } else {
-            console.log('Skipping code-signing. Specify the --code-sign option to perform code-signing'.gray)
+            console.log(colors.gray('Skipping code-signing. Specify the --code-sign option to perform code-signing'))
           }
           if (argv.createWindowsInstaller) {
             return createWindowsInstaller(packagedAppPath)
@@ -124,7 +124,7 @@ if (!argv.generateApiDocs) {
                 return packagedAppPath
               })
           } else {
-            console.log('Skipping creating installer. Specify the --create-windows-installer option to create a Squirrel-based Windows installer.'.gray)
+            console.log(colors.gray('Skipping creating installer. Specify the --create-windows-installer option to create a Squirrel-based Windows installer.'))
           }
           break
         }
@@ -132,13 +132,13 @@ if (!argv.generateApiDocs) {
           if (argv.createDebianPackage) {
             createDebianPackage(packagedAppPath)
           } else {
-            console.log('Skipping creating debian package. Specify the --create-debian-package option to create it.'.gray)
+            console.log(colors.gray('Skipping creating debian package. Specify the --create-debian-package option to create it.'))
           }
 
           if (argv.createRpmPackage) {
             createRpmPackage(packagedAppPath)
           } else {
-            console.log('Skipping creating rpm package. Specify the --create-rpm-package option to create it.'.gray)
+            console.log(colors.gray('Skipping creating rpm package. Specify the --create-rpm-package option to create it.'))
           }
           break
         }
@@ -149,13 +149,13 @@ if (!argv.generateApiDocs) {
       if (argv.compressArtifacts) {
         compressArtifacts(packagedAppPath)
       } else {
-        console.log('Skipping artifacts compression. Specify the --compress-artifacts option to compress Atom binaries (and symbols on macOS)'.gray)
+        console.log(colors.gray('Skipping artifacts compression. Specify the --compress-artifacts option to compress Atom binaries (and symbols on macOS)'))
       }
 
       if (argv.install != null) {
         installApplication(packagedAppPath, argv.install)
       } else {
-        console.log('Skipping installation. Specify the --install option to install Atom'.gray)
+        console.log(colors.gray('Skipping installation. Specify the --install option to install Atom'))
       }
     })
 }
