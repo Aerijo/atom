@@ -10,6 +10,7 @@ if (process.argv.includes('--no-bootstrap')) {
   require('./bootstrap')
 }
 
+require('coffee-script/register')
 const colors = require('colors/safe')
 
 const path = require('path')
