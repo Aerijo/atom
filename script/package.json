@@ -17,7 +17,7 @@
     "electron-mksnapshot": "^9.0.2",
     "electron-packager": "12.2.0",
     "eslint": "7.4.0",
-    "eslint-config-prettier": "^4.2.0",
+    "eslint-config-prettier": "6.11.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.17.2",
     "eslint-plugin-node": "^9.0.1",
