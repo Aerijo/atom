@@ -22,6 +22,8 @@ module.exports = function() {
   const jsMetadata = joanna(glob.sync(`src/**/*.js`));
   process.chdir(oldWorkingDirectoryPath);
 
+  console.log(`Generated CoffeeScript docs for ${Object.keys(coffeeMetadata.files).length} files`);
+
   const metadata = {
     repository: coffeeMetadata.repository,
     version: coffeeMetadata.version,
