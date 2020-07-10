@@ -10,6 +10,6 @@ module.exports = function(ci) {
   childProcess.execFileSync(
     CONFIG.getNpmBinPath(),
     ['--global-style', '--loglevel=error', 'install'],
-    { env: process.env, cwd: CONFIG.apmRootPath }
+    { env: process.env, cwd: CONFIG.apmRootPath, stdio: "inherit" }
   );
 };
