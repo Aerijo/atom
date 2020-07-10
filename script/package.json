@@ -51,7 +51,7 @@
     "sync-request": "6.1.0",
     "tello": "1.2.0",
     "terser": "4.8.0",
-    "webdriverio": "^5.9.2",
+    "webdriverio": "6.1.25",
     "yargs": "4.8.1"
   },
   "scripts": {
