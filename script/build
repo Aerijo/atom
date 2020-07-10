@@ -10,8 +10,6 @@ if (process.argv.includes('--no-bootstrap')) {
   require('./bootstrap')
 }
 
-// Needed so we can require src/module-cache.coffee during generateModuleCache
-require('coffee-script/register')
 const colors = require('colors/safe')
 
 const path = require('path')
@@ -33,15 +31,8 @@ const argv = yargs
   .wrap(yargs.terminalWidth())
   .argv
 
-const checkChromedriverVersion = require('./lib/check-chromedriver-version')
-const cleanOutputDirectory = require('./lib/clean-output-directory')
 const codeSignOnMac = require('./lib/code-sign-on-mac')
 const codeSignOnWindows = require('./lib/code-sign-on-windows')
-const compressArtifacts = require('./lib/compress-artifacts')
-const copyAssets = require('./lib/copy-assets')
-const createDebianPackage = require('./lib/create-debian-package')
-const createRpmPackage = require('./lib/create-rpm-package')
-const createWindowsInstaller = require('./lib/create-windows-installer')
 const dumpSymbols = require('./lib/dump-symbols')
 const generateAPIDocs = require('./lib/generate-api-docs')
 const generateMetadata = require('./lib/generate-metadata')
@@ -69,9 +60,9 @@ process.env.ELECTRON_VERSION = CONFIG.appMetadata.electronVersion
 let binariesPromise = Promise.resolve()
 
 if (!argv.existingBinaries) {
-  checkChromedriverVersion()
-  cleanOutputDirectory()
-  copyAssets()
+  require('./lib/check-chromedriver-version').start()
+  require('./lib/clean-output-directory').start()
+  require('./lib/copy-assets').start()
   transpilePackagesWithCustomTranspilerPaths()
   transpileBabelPaths()
   transpileCoffeeScriptPaths()
@@ -118,7 +109,7 @@ if (!argv.generateApiDocs) {
             console.log(colors.gray('Skipping code-signing. Specify the --code-sign option to perform code-signing'))
           }
           if (argv.createWindowsInstaller) {
-            return createWindowsInstaller(packagedAppPath)
+            return require('./lib/create-windows-installer').start(packagedAppPath)
               .then((installerPath) => {
                 argv.codeSign && codeSignOnWindows([installerPath])
                 return packagedAppPath
@@ -130,13 +121,13 @@ if (!argv.generateApiDocs) {
         }
         case 'linux': {
           if (argv.createDebianPackage) {
-            createDebianPackage(packagedAppPath)
+            require('./lib/create-debian-package').start(packagedAppPath)
           } else {
             console.log(colors.gray('Skipping creating debian package. Specify the --create-debian-package option to create it.'))
           }
 
           if (argv.createRpmPackage) {
-            createRpmPackage(packagedAppPath)
+            require('./lib/create-rpm-package').start(packagedAppPath)
           } else {
             console.log(colors.gray('Skipping creating rpm package. Specify the --create-rpm-package option to create it.'))
           }
@@ -147,7 +138,7 @@ if (!argv.generateApiDocs) {
       return Promise.resolve(packagedAppPath)
     }).then(packagedAppPath => {
       if (argv.compressArtifacts) {
-        compressArtifacts(packagedAppPath)
+        require('./lib/compress-artifacts').start(packagedAppPath)
       } else {
         console.log(colors.gray('Skipping artifacts compression. Specify the --compress-artifacts option to compress Atom binaries (and symbols on macOS)'))
       }

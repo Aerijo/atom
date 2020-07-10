@@ -39,7 +39,7 @@ module.exports = class Task {
       return;
     }
     console.log(`-> ${this.getName()}`);
-    this.run(...args);
+    return this.run(...args);
   }
 
   subtask(msg) {
