@@ -8,35 +8,44 @@ const fs = require('fs-extra');
 const path = require('path');
 
 const CONFIG = require('../config');
+const Task = require("./task");
 
-module.exports = function() {
-  const generatedJSONPath = path.join(CONFIG.docsOutputPath, 'atom-api.json');
-  console.log(`Generating API docs at ${generatedJSONPath}`);
+class GenerateApiDocs extends Task {
+  constructor() {
+    super("Generate API docs");
+  }
 
-  // Unfortunately, correct relative paths depend on a specific working
-  // directory, but this script should be able to run from anywhere, so we
-  // muck with the cwd temporarily.
-  const oldWorkingDirectoryPath = process.cwd();
-  process.chdir(CONFIG.repositoryRootPath);
-  const coffeeMetadata = donna.generateMetadata(['.'])[0];
-  const jsMetadata = joanna(glob.sync(`src/**/*.js`));
-  process.chdir(oldWorkingDirectoryPath);
+  run() {
+    const generatedJSONPath = path.join(CONFIG.docsOutputPath, 'atom-api.json');
+    this.subtask(`Generating API docs at ${generatedJSONPath}`);
 
-  console.log(`Generated CoffeeScript docs for ${Object.keys(coffeeMetadata.files).length} files`);
+    // Unfortunately, correct relative paths depend on a specific working
+    // directory, but this script should be able to run from anywhere, so we
+    // muck with the cwd temporarily.
+    const oldWorkingDirectoryPath = process.cwd();
+    process.chdir(CONFIG.repositoryRootPath);
+    const coffeeMetadata = donna.generateMetadata(['.'])[0];
+    const jsMetadata = joanna(glob.sync(`src/**/*.js`));
+    process.chdir(oldWorkingDirectoryPath);
 
-  const metadata = {
-    repository: coffeeMetadata.repository,
-    version: coffeeMetadata.version,
-    files: Object.assign(coffeeMetadata.files, jsMetadata.files)
-  };
+    this.info(`Generated CoffeeScript docs for ${Object.keys(coffeeMetadata.files).length} files`);
 
-  const api = tello.digest([metadata]);
-  Object.assign(api.classes, getAPIDocsForDependencies());
-  api.classes = sortObjectByKey(api.classes);
+    const metadata = {
+      repository: coffeeMetadata.repository,
+      version: coffeeMetadata.version,
+      files: Object.assign(coffeeMetadata.files, jsMetadata.files)
+    };
 
-  fs.mkdirpSync(CONFIG.docsOutputPath);
-  fs.writeFileSync(generatedJSONPath, JSON.stringify(api, null, 2));
-};
+    const api = tello.digest([metadata]);
+    Object.assign(api.classes, getAPIDocsForDependencies());
+    api.classes = sortObjectByKey(api.classes);
+
+    fs.mkdirpSync(CONFIG.docsOutputPath);
+    fs.writeFileSync(generatedJSONPath, JSON.stringify(api, null, 2));
+  }
+}
+
+module.exports = new GenerateApiDocs();
 
 function getAPIDocsForDependencies() {
   const classes = {};

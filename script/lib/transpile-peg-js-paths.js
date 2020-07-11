@@ -6,13 +6,32 @@ const glob = require('glob');
 const path = require('path');
 
 const CONFIG = require('../config');
+const Task = require("./task");
 
-module.exports = function() {
-  console.log(`Transpiling PEG.js paths in ${CONFIG.intermediateAppPath}`);
-  for (let path of getPathsToTranspile()) {
-    transpilePegJsPath(path);
+class TranspilePEGJS extends Task {
+  constructor() {
+    super("Transpile PEG.js paths");
   }
-};
+
+  run() {
+    this.subtask(`Transpiling PEG.js paths in ${CONFIG.intermediateAppPath}`);
+    for (let path of getPathsToTranspile()) {
+      this.transpilePegJsPath(path);
+    }
+  }
+
+  transpilePegJsPath(pegJsPath) {
+    this.info(`transpiling ${pegJsPath}`);
+    const inputCode = fs.readFileSync(pegJsPath, 'utf8');
+    const jsPath = pegJsPath.replace(/pegjs$/g, 'js');
+    const outputCode =
+      'module.exports = ' + peg.buildParser(inputCode, { output: 'source' });
+    fs.writeFileSync(jsPath, outputCode);
+    fs.unlinkSync(pegJsPath);
+  }
+}
+
+module.exports = new TranspilePEGJS();
 
 function getPathsToTranspile() {
   let paths = [];
@@ -31,13 +50,4 @@ function getPathsToTranspile() {
     );
   }
   return paths;
-}
-
-function transpilePegJsPath(pegJsPath) {
-  const inputCode = fs.readFileSync(pegJsPath, 'utf8');
-  const jsPath = pegJsPath.replace(/pegjs$/g, 'js');
-  const outputCode =
-    'module.exports = ' + peg.buildParser(inputCode, { output: 'source' });
-  fs.writeFileSync(jsPath, outputCode);
-  fs.unlinkSync(pegJsPath);
 }

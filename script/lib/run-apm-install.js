@@ -11,6 +11,8 @@ class RunApmInstall extends Task {
   }
 
   run(packagePath, ci, stdioOptions) {
+    this.subtask(`Running apm install on ${packagePath}`);
+
     const installEnv = Object.assign({}, process.env);
     // Set resource path so that apm can load metadata related to Atom.
     installEnv.ATOM_RESOURCE_PATH = CONFIG.repositoryRootPath;

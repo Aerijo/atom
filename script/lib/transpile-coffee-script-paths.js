@@ -6,15 +6,34 @@ const glob = require('glob');
 const path = require('path');
 
 const CONFIG = require('../config');
+const Task = require("./task");
 
-module.exports = function() {
-  console.log(
-    `Transpiling CoffeeScript paths in ${CONFIG.intermediateAppPath}`
-  );
-  for (let path of getPathsToTranspile()) {
-    transpileCoffeeScriptPath(path);
+class TranspileCS extends Task {
+  constructor() {
+    super("Transpile CoffeeScript");
   }
-};
+
+  run() {
+    const paths = getPathsToTranspile();
+    this.subtask(
+      `Transpiling ${paths.length} CoffeeScript paths in ${CONFIG.intermediateAppPath}`
+    );
+    for (let path of paths) {
+      this.transpileCoffeeScriptPath(path);
+    }
+  }
+
+  transpileCoffeeScriptPath(coffeePath) {
+    const jsPath = coffeePath.replace(/coffee$/g, 'js');
+    fs.writeFileSync(
+      jsPath,
+      CompileCache.addPathToCache(coffeePath, CONFIG.atomHomeDirPath)
+    );
+    fs.unlinkSync(coffeePath);
+  }
+}
+
+module.exports = new TranspileCS();
 
 function getPathsToTranspile() {
   let paths = [];
@@ -53,13 +72,4 @@ function getPathsToTranspile() {
     );
   }
   return paths;
-}
-
-function transpileCoffeeScriptPath(coffeePath) {
-  const jsPath = coffeePath.replace(/coffee$/g, 'js');
-  fs.writeFileSync(
-    jsPath,
-    CompileCache.addPathToCache(coffeePath, CONFIG.atomHomeDirPath)
-  );
-  fs.unlinkSync(coffeePath);
 }

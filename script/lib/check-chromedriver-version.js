@@ -9,7 +9,7 @@ const Task = require("./task")
 
 class CheckChromedriverVersion extends Task {
   constructor() {
-    super("Check Chromdriver version");
+    super("Check Chromedriver version");
   }
 
   run() {
@@ -19,6 +19,9 @@ class CheckChromedriverVersion extends Task {
     const mksnapshotVer = buildMetadata.dependencies['electron-mksnapshot'];
     const chromedriverActualVer = chromedriverMetadataPath.version;
     const mksnapshotActualVer = mksnapshotMetadataPath.version;
+
+    this.info(`chromedriverVer: target=${chromedriverVer}, actual=${chromedriverActualVer}`);
+    this.info(`mksnapshotVer: target=${mksnapshotVer}, actual=${mksnapshotActualVer}`);
 
     // Always use caret on electron-chromedriver so that it can pick up the best minor/patch versions
     if (!chromedriverVer.startsWith('^')) {

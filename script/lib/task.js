@@ -1,9 +1,7 @@
-const {EventEmitter} = require("events");
-
 module.exports = class Task {
   constructor(name) {
+    this.indent = "";
     this.name = name;
-    this.emitter = new EventEmitter();
   }
 
   skip() {
@@ -14,47 +12,40 @@ module.exports = class Task {
     throw new Error("Tasks must implement `run` method");
   }
 
-  finish() {
-    this.emitter.emit("finish", {reason: "DONE"});
-  }
-
-  onFinished(callback) {
-    this.emitter.addListener("finish", callback);
-  }
-
-  finishedPromise() {
-    return new Promise(resolve => this.emitter.addListener("finish", resolve));
-  }
-
   getName() {
     return this.name;
   }
 
   start(...args) {
-    const skip = this.skip();
+    const skip = this.skip(...args);
     if (skip) {
       if (typeof skip === "string") {
-        console.log(`-> Skipping ${this.getName()}: ${skip}`);
+        console.log(this.indent + `-> Skipping ${this.getName()}: ${skip}`);
       }
-      return;
+      return Promise.resolve();
     }
-    console.log(`-> ${this.getName()}`);
+    console.log(this.indent + `-> ${this.getName()}`);
     return this.run(...args);
   }
 
+  child(task, ...args) {
+    task.indent = this.indent + "    ";
+    return task.start(...args);
+  }
+
   subtask(msg) {
-    console.log(`    -> ${msg}`);
+    console.log(this.indent + `  -> ${msg}`);
   }
 
   info(msg) {
-    console.info(`    - ${msg}`)
+    console.info(this.indent + `  - ${msg}`)
   }
 
   warn(msg) {
-    console.warn(`    - ! ${msg}`)
+    console.warn(this.indent + `  - ! ${msg}`)
   }
 
   error(msg) {
-    console.error(`    - !! ${msg}`)
+    console.error(this.indent + `  - !! ${msg}`)
   }
 }
