@@ -6,11 +6,15 @@ const CONFIG = require('../config');
 
 process.env.ELECTRON_CUSTOM_VERSION = CONFIG.appMetadata.electronVersion;
 
-module.exports = function(ci) {
+module.exports = async function(ci) {
   console.log('Installing script dependencies');
-  childProcess.execFileSync(
-    CONFIG.getNpmBinPath(ci),
-    ['--loglevel=error', ci ? 'ci' : 'install'],
-    { env: process.env, cwd: CONFIG.scriptRootPath }
-  );
+  await new Promise(resolve => {
+    childProcess.execFile(
+      CONFIG.getNpmBinPath(ci),
+      ['--loglevel=error', ci ? 'ci' : 'install'],
+      { env: process.env, cwd: CONFIG.scriptRootPath },
+      () => resolve(),
+    );
+  });
+  console.log('Installed script dependencies');
 };

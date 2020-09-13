@@ -35,14 +35,18 @@ async function bootstrap() {
 
   if (process.platform === 'win32') deleteMsbuildFromPath()
 
-  installScriptDependencies(ci)
-  installApm(ci)
-  childProcess.execFileSync(
-    CONFIG.getApmBinPath(),
-    ['--version'],
-    { stdio: 'inherit' }
-  )
-  runApmInstall(CONFIG.repositoryRootPath, ci)
+  await Promise.all([
+    installScriptDependencies(ci),
+    installApm(ci)
+    .then(() => {
+      childProcess.execFileSync(
+        CONFIG.getApmBinPath(),
+        ['--version'],
+        { stdio: 'inherit' }
+      )
+    })
+    .then(() => runApmInstall(CONFIG.repositoryRootPath, ci))
+  ]);
 
   dependenciesFingerprint.write()
 }
