@@ -30,7 +30,7 @@ async function bootstrap() {
   verifyMachineRequirements(ci)
 
   if (dependenciesFingerprint.isOutdated()) {
-    cleanDependencies()
+    await cleanDependencies()
   }
 
   if (process.platform === 'win32') deleteMsbuildFromPath()
