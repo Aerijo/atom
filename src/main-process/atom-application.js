@@ -454,15 +454,6 @@ module.exports = class AtomApplication extends EventEmitter {
   // Public: Removes the {AtomWindow} from the global window list.
   removeWindow(window) {
     this.windowStack.removeWindow(window);
-    if (this.getAllWindows().length === 0) {
-      if (this.applicationMenu != null) {
-        this.applicationMenu.enableWindowSpecificItems(false);
-      }
-      if (['win32', 'linux'].includes(process.platform)) {
-        app.quit();
-        return;
-      }
-    }
     if (!window.isSpec) this.saveCurrentWindowOptions(true);
   }
 
@@ -770,6 +761,18 @@ module.exports = class AtomApplication extends EventEmitter {
           this.deleteSocketFile(),
           this.deleteSocketSecretFile()
         ]);
+      })
+    );
+
+    this.disposable.add(
+      ipcHelpers.on(app, 'window-all-closed', () => {
+        if (this.applicationMenu != null) {
+          this.applicationMenu.enableWindowSpecificItems(false);
+        }
+        if (['win32', 'linux'].includes(process.platform)) {
+          app.quit();
+          return;
+        }
       })
     );
 
