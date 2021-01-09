@@ -138,15 +138,16 @@ function handleStartupEventWithSquirrel() {
 function getConfig() {
   const config = new Config();
 
-  let configFilePath;
-  if (fs.existsSync(path.join(process.env.ATOM_HOME, 'config.json'))) {
-    configFilePath = path.join(process.env.ATOM_HOME, 'config.json');
-  } else if (fs.existsSync(path.join(process.env.ATOM_HOME, 'config.cson'))) {
-    configFilePath = path.join(process.env.ATOM_HOME, 'config.cson');
+  let configFileData = undefined;
+  try {
+    configFileData = CSON.readFileSync(path.join(process.env.ATOM_HOME, 'config.json'))
+  } catch {
+    try {
+      configFileData = CSON.readFileSync(path.join(process.env.ATOM_HOME, 'config.cson'))
+    } catch {}
   }
 
-  if (configFilePath) {
-    const configFileData = CSON.readFileSync(configFilePath);
+  if (configFileData !== undefined) {
     config.resetUserSettings(configFileData);
   }
 
