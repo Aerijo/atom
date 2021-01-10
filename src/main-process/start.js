@@ -141,10 +141,15 @@ function getConfig() {
   let configFileData = undefined;
   try {
     configFileData = CSON.readFileSync(path.join(process.env.ATOM_HOME, 'config.json'))
-  } catch {
-    try {
-      configFileData = CSON.readFileSync(path.join(process.env.ATOM_HOME, 'config.cson'))
-    } catch {}
+  } catch (e) {
+    // Only attempt to try an alternative file if the first doesn't exist. If both exist,
+    // we don't want the first to be silently skipped because it has file permission issues
+    // or a parse error.
+    if (e.code === "ENOENT") {
+      try {
+        configFileData = CSON.readFileSync(path.join(process.env.ATOM_HOME, 'config.cson'))
+      } catch {}
+    }
   }
 
   if (configFileData !== undefined) {
